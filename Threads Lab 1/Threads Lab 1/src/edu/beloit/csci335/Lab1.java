@@ -11,19 +11,23 @@ public class Lab1 implements Runnable {
 	public static void main(String[] args) {
 		String threadName = args[0];
 		Lab1 instance = new Lab1();
+		System.out.println("Creating thread with name " + threadName);
 		Thread thread = new Thread(instance, threadName); 
+		System.out.println("Thread is named " + thread.getName());
 		thread.run();
 	}
 	
 	public void run() {
 		int population = 100;
+		int previousPopulation = 100;
 		while (population > 0) {
-			int deaths = Math.round(population*population*0.01f);
-			int births = Math.round(population*0.5f);
+			int deaths = Math.round(population*population*0.001f);
+			int births = Math.round(previousPopulation+population*0.5f);
 			
-			population = population + births - deaths;
+			previousPopulation = population;
+			population = Math.max(0, population + births - deaths);
 			
-			System.out.print("births: " + births + " deaths: " + deaths + " population: " + population);
+			System.out.println(Thread.currentThread().getName() + ": births: " + births + " deaths: " + deaths + " population: " + population);
 			
 			try {
 				Thread.sleep(INTERVAL_MS);
