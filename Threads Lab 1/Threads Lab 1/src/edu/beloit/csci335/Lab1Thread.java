@@ -40,7 +40,8 @@ public class Lab1Thread extends Thread {
 			}
 			lifetime++;
 			
-			System.out.println(Thread.currentThread().getName() + ": births: " + births + " deaths: " + deaths + " population: " + population);
+			System.out.println(Thread.currentThread().getName() + lifetime
+					+ ": births: " + births + " deaths: " + deaths + " population: " + population);
 			
 			try {
 				Thread.sleep(INTERVAL_MS);
@@ -48,7 +49,8 @@ public class Lab1Thread extends Thread {
 				return;
 			}
 		}
-		System.out.println("Radio Transmissions from " + Thread.currentThread().getName() + " have ceased after " + lifetime + " iterations.");
+		System.out.println("Radio Transmissions from " + Thread.currentThread().getName()
+				+ " have ceased after " + lifetime + " iterations.");
 	}
 
 }
