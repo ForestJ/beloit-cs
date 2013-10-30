@@ -1,12 +1,40 @@
 package edu.beloit.csci335;
 
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class CounterAppParallel extends CounterAppSerial {
+	
+	class BasicCountingThread extends Thread {
+		private int index;
+		private CyclicBarrier barrier;
+		
+		public BasicCountingThread (int index, CyclicBarrier barrier) {
+			this.index = index;
+		}
+		
+		public void run() {
+			float randomValue = CounterAppParallel.values[index];
+			CounterAppParallel.linearResult += randomValue;
+			try {
+				barrier.await();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (BrokenBarrierException e) {
+				e.printStackTrace();
+			}
+			
+			synchronized(CounterAppParallel.lock) {
+				if(!CounterAppParallel.finishedPermuted) {
+					CounterAppParallel.doneWithPermutedCount();
+				}
+			}
+		}
+	}
 	
 	class LinearCountingThread extends Thread {
 		private int index;
@@ -27,17 +55,25 @@ public class CounterAppParallel extends CounterAppSerial {
 			
 			float randomValue = CounterAppParallel.values[index];
 			
+			try {
+				barrier.await();
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			} catch (BrokenBarrierException e1) {
+				e1.printStackTrace();
+			}
+			
 			synchronized(CounterAppParallel.lock) {
 				while(CounterAppParallel.nextIndex != index) {
 					try {
-						wait();
+						CounterAppParallel.lock.wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
 			}
 			
-			CounterAppParallel.linearResult += CounterAppParallel.values[index];
+			CounterAppParallel.linearResult += randomValue;
 			
 			CounterAppParallel.nextIndex++;
 			if(CounterAppParallel.nextIndex >= CounterAppParallel.howManyNumbers) {
@@ -48,59 +84,64 @@ public class CounterAppParallel extends CounterAppSerial {
 				CounterAppParallel.lock.notifyAll();
 			}
 		}
-
 	}
 	
 	public static Object lock = new Object();
-	public static CyclicBarrier linearBarrier;
+	public static CyclicBarrier barrier;
 	public static int nextIndex = 0;
-	public static Float linearResult;
-	public static Float permutedResult;
-	public static Float prefixResult;
+	public static Float linearResult = new Float(0);
+	public static Float permutedResult = new Float(0);
+	public static boolean finishedPermuted = false;
+	public static Float prefixResult = new Float(0);
+	public static CounterAppParallel instance;
 	
-	public static void doCounting () {
-		linearBarrier = new CyclicBarrier(CounterAppParallel.howManyNumbers);
-		CounterAppParallel instance = new CounterAppParallel();
+	public static void main(String[] args) {
+		int seed = ShellStuff.promptUserForInt("Please enter a random seed: ");
+		howManyNumbers = ShellStuff.promptUserForInt("How many numbers do you want to sum? ");
+		
+		permutation = PermutationHelper.generateRandomPermutation(seed, howManyNumbers);
+		values = getRandomFloats(GEN_VALUES_SEED, howManyNumbers);
+		
+		barrier = new CyclicBarrier(CounterAppParallel.howManyNumbers);
+		instance = new CounterAppParallel();
 		
 		instance.countLinearAsync();
 		
-		Float permutedResult = countPermuted();
-		System.out.println("countPermuted: " + permutedResult.toString());
-		
-		Float difference = linearResult - permutedResult;
-		Float differenceAsPercent = Math.abs(difference*100) / linearResult;
-		System.out.println();
-		System.out.println("difference: " + difference.toString() + " or " + differenceAsPercent + "%");
-		
-		Float prefixResult = countPrefix();
-		System.out.println();
-		System.out.println("countPrefix: " + prefixResult.toString());
-		
-		difference = linearResult - prefixResult;
-		differenceAsPercent = Math.abs(difference*100) / linearResult;
-		System.out.println();
-		System.out.println("difference: " + difference.toString() + " or " + differenceAsPercent + "%");	
+			
 	}
 	
 	public void countLinearAsync() {
 		Thread[] threads = new Thread[howManyNumbers];
 		
 		for(int i = 0; i < howManyNumbers; i++) {
-			threads[i] = new LinearCountingThread(i, linearBarrier);
+			threads[i] = new LinearCountingThread(i, barrier);
+			threads[i].start();
 		}
 	}
 	
 	public static void doneWithLinearCount() {
 		System.out.println();
 		System.out.println("countLinear: " + linearResult.toString());
+		
+		instance.countPermutedAsync();
 	}
 
-	public static float countPermuted() {
-		float runningTotal = 0f;
+	public void countPermutedAsync() {
+		Thread[] threads = new Thread[howManyNumbers];
+		
 		for(int i = 0; i < howManyNumbers; i++) {
-			runningTotal += values[permutation[i]];
+			threads[permutation[i]] = new BasicCountingThread(i, barrier);
 		}
-		return runningTotal;
+		
+		for(int i = 0; i < howManyNumbers; i++) {
+			threads[i].start();
+		}
+	}
+	
+	public static void doneWithPermutedCount() {
+		finishedPermuted = true;
+		System.out.println();
+		System.out.println("countLinear: " + linearResult.toString());
 	}
 	
 	public static float countPrefix() {

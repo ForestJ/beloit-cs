@@ -20,12 +20,6 @@ public class CounterAppSerial {
 		permutation = PermutationHelper.generateRandomPermutation(seed, howManyNumbers);
 		values = getRandomFloats(GEN_VALUES_SEED, howManyNumbers);
 		
-		
-		doCounting();
-		
-	}
-	
-	public static void doCounting () {
 		Float linearResult = countLinear();
 		System.out.println();
 		System.out.println("countLinear: " + linearResult.toString());
@@ -47,6 +41,7 @@ public class CounterAppSerial {
 		System.out.println();
 		System.out.println("difference: " + difference.toString() + " or " + differenceAsPercent + "%");	
 	}
+
 	
 	public static float countLinear() {
 		float runningTotal = 0f;
