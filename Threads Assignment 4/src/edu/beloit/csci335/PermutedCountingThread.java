@@ -13,20 +13,36 @@ public class PermutedCountingThread extends Thread {
 	}
 	
 	public void run() {
-		float randomValue = CounterApp.values[index];
-		CounterApp.permutedResult += randomValue;
+		
+		float randomValue = CounterApp.values[CounterApp.permutation[index]];
+		
 		try {
 			barrier.await();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (BrokenBarrierException e) {
-			e.printStackTrace();
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		} catch (BrokenBarrierException e1) {
+			e1.printStackTrace();
 		}
 		
 		synchronized(CounterApp.lock) {
-			if(!CounterApp.finishedPermuted) {
-				CounterApp.doneWithPermutedCount();
+			while(CounterApp.nextIndex != index) {
+				try {
+					CounterApp.lock.wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
+		}
+		
+		CounterApp.permutedResult += randomValue;
+		
+		CounterApp.nextIndex++;
+		if(CounterApp.nextIndex >= CounterApp.howManyNumbers) {
+			CounterApp.doneWithPermutedCount();
+		}
+		
+		synchronized(CounterApp.lock) {
+			CounterApp.lock.notifyAll();
 		}
 	}
 }

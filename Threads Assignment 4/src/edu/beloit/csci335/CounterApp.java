@@ -30,6 +30,10 @@ public class CounterApp {
 		permutation = PermutationHelper.generateRandomPermutation(seed, howManyNumbers);
 		values = getRandomFloats(GEN_VALUES_SEED, howManyNumbers);
 		
+		System.out.println();
+		System.out.println("Starting Serial Counts");
+		System.out.println("-------------------------------------------");
+		
 		Float linearResult = countLinear();
 		System.out.println();
 		System.out.println("countLinear: " + linearResult.toString());
@@ -51,6 +55,10 @@ public class CounterApp {
 		System.out.println();
 		System.out.println("difference: " + difference.toString() + " or " + differenceAsPercent + "%");	
 		
+		
+		System.out.println();
+		System.out.println("Starting Parallel Counts");
+		System.out.println("-------------------------------------------");
 		
 		barrier = new CyclicBarrier(CounterApp.howManyNumbers);
 		instance = new CounterApp();
@@ -100,11 +108,8 @@ public class CounterApp {
 	
 	
 	public void countLinearAsync() {
-		Thread[] threads = new Thread[howManyNumbers];
-		
 		for(int i = 0; i < howManyNumbers; i++) {
-			threads[i] = new LinearCountingThread(i, barrier);
-			threads[i].start();
+			new LinearCountingThread(i, barrier).start();
 		}
 	}
 	
@@ -116,14 +121,10 @@ public class CounterApp {
 	}
 
 	public void countPermutedAsync() {
-		Thread[] threads = new Thread[howManyNumbers];
+		nextIndex = 0;
 		
 		for(int i = 0; i < howManyNumbers; i++) {
-			threads[permutation[i]] = new PermutedCountingThread(i, barrier);
-		}
-		
-		for(int i = 0; i < howManyNumbers; i++) {
-			threads[i].start();
+			new PermutedCountingThread(i, barrier).start();
 		}
 	}
 	
