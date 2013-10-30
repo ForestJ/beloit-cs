@@ -9,83 +9,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class CounterAppParallel extends CounterAppSerial {
 	
-	class BasicCountingThread extends Thread {
-		private int index;
-		private CyclicBarrier barrier;
-		
-		public BasicCountingThread (int index, CyclicBarrier barrier) {
-			this.index = index;
-		}
-		
-		public void run() {
-			float randomValue = CounterAppParallel.values[index];
-			CounterAppParallel.linearResult += randomValue;
-			try {
-				barrier.await();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (BrokenBarrierException e) {
-				e.printStackTrace();
-			}
-			
-			synchronized(CounterAppParallel.lock) {
-				if(!CounterAppParallel.finishedPermuted) {
-					CounterAppParallel.doneWithPermutedCount();
-				}
-			}
-		}
-	}
-	
-	class LinearCountingThread extends Thread {
-		private int index;
-		private CyclicBarrier barrier;
-		
-		public LinearCountingThread (int index, CyclicBarrier barrier) {
-			this.index = index;
-			this.barrier = barrier;
-		}
-		
-		public void run() {
-			/*
-			Random random = new Random();
-			random.setSeed(index);
-			float randomAmount = MAX_FLOAT_VALUE - MIN_FLOAT_VALUE;
-			float randomValue = MIN_FLOAT_VALUE + (random.nextFloat() * randomAmount);
-			*/
-			
-			float randomValue = CounterAppParallel.values[index];
-			
-			try {
-				barrier.await();
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			} catch (BrokenBarrierException e1) {
-				e1.printStackTrace();
-			}
-			
-			synchronized(CounterAppParallel.lock) {
-				while(CounterAppParallel.nextIndex != index) {
-					try {
-						CounterAppParallel.lock.wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			
-			CounterAppParallel.linearResult += randomValue;
-			
-			CounterAppParallel.nextIndex++;
-			if(CounterAppParallel.nextIndex >= CounterAppParallel.howManyNumbers) {
-				CounterAppParallel.doneWithLinearCount();
-			}
-			
-			synchronized(CounterAppParallel.lock) {
-				CounterAppParallel.lock.notifyAll();
-			}
-		}
-	}
-	
 	public static Object lock = new Object();
 	public static CyclicBarrier barrier;
 	public static int nextIndex = 0;
@@ -130,7 +53,7 @@ public class CounterAppParallel extends CounterAppSerial {
 		Thread[] threads = new Thread[howManyNumbers];
 		
 		for(int i = 0; i < howManyNumbers; i++) {
-			threads[permutation[i]] = new BasicCountingThread(i, barrier);
+			threads[permutation[i]] = new PermutedCountingThread(i, barrier);
 		}
 		
 		for(int i = 0; i < howManyNumbers; i++) {
@@ -140,8 +63,12 @@ public class CounterAppParallel extends CounterAppSerial {
 	
 	public static void doneWithPermutedCount() {
 		finishedPermuted = true;
+		System.out.println("countPermuted: " + permutedResult.toString());
+		
+		Float difference = linearResult - permutedResult;
+		Float differenceAsPercent = Math.abs(difference*100) / linearResult;
 		System.out.println();
-		System.out.println("countLinear: " + linearResult.toString());
+		System.out.println("difference: " + difference.toString() + " or " + differenceAsPercent + "%");
 	}
 	
 	public static float countPrefix() {

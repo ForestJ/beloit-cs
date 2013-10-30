@@ -1,0 +1,54 @@
+CounterAppParallel 
+
+On start {
+	set count to number of floats
+	set activeCount to (count / 2) rounded up
+
+	create a PrefixCountingThread for every other float (activeCount in total) 
+		each PrefixCountingThread gets its index set to the index of the float, e.g. (0, 2, 4, …, 68, 70, 72)
+	start the threads
+}
+
+
+public static void reset () {
+	reset = true;
+
+	if(activeCount == 1) {
+		printResult(values[0]);
+		count = activeCount = 0;
+	}
+
+	count = activeCount;
+	activeCount = (count / 2) rounded up
+	newBarrier = new Barrier(activeCount );
+}
+
+
+
+PrefixCountingThread
+
+while(myIndex < CounterAppParallel.count) {
+
+	grab two floats from the list: values[myIndex] and values[myIndex+1], assuming  values[myIndex+1] < count, otherwise use zero
+
+	add the two floats
+
+	await  barrier1 with activeCount parties 
+
+	store the result of the add in values[(myIndex/2) rounded up]
+
+	set CounterAppParallel.reset to false
+
+	await barrier1 with activeCount parties 
+
+	synch on CounterAppParallel.lock
+		if(!CounterAppParallel.reset) {
+			CounterAppParallel.reset();
+		}
+		set barrier2 to CounterAppParallel.newBarrier
+	end synch
+
+	await barrier1 with (old value of activeCount) parties 
+
+	replace barrier1 with barrier2
+	
