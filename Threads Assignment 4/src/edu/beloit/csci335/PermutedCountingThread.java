@@ -13,8 +13,8 @@ public class PermutedCountingThread extends Thread {
 	}
 	
 	public void run() {
-		float randomValue = CounterAppParallel.values[index];
-		CounterAppParallel.permutedResult += randomValue;
+		float randomValue = CounterApp.values[index];
+		CounterApp.permutedResult += randomValue;
 		try {
 			barrier.await();
 		} catch (InterruptedException e) {
@@ -23,9 +23,9 @@ public class PermutedCountingThread extends Thread {
 			e.printStackTrace();
 		}
 		
-		synchronized(CounterAppParallel.lock) {
-			if(!CounterAppParallel.finishedPermuted) {
-				CounterAppParallel.doneWithPermutedCount();
+		synchronized(CounterApp.lock) {
+			if(!CounterApp.finishedPermuted) {
+				CounterApp.doneWithPermutedCount();
 			}
 		}
 	}

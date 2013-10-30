@@ -31,6 +31,12 @@ public class ShellStuff {
 				System.out.println();
 				continue;
 			}
+	        
+	        if(value < 1) {
+	        	System.out.println("Exception: input '" + input + "' must be greater than 0.");
+	        	continue;
+	        }
+	        
 	        hasValue = true;
 		}
 		

@@ -1,8 +1,9 @@
 package edu.beloit.csci335;
 
 import java.util.Random;
+import java.util.concurrent.CyclicBarrier;
 
-public class CounterAppSerial {
+public class CounterApp {
 	
 	public static final float MIN_FLOAT_VALUE = 10f;
 	public static final float MAX_FLOAT_VALUE = 100f;
@@ -11,6 +12,15 @@ public class CounterAppSerial {
 	public static int howManyNumbers;
 	public static int[] permutation;
 	public static float[] values;
+	
+	public static Object lock = new Object();
+	public static CyclicBarrier barrier;
+	public static int nextIndex = 0;
+	public static Float linearResult = new Float(0);
+	public static Float permutedResult = new Float(0);
+	public static boolean finishedPermuted = false;
+	public static Float prefixResult = new Float(0);
+	public static CounterApp instance;
 	
 	public static void main(String[] args) {
 		
@@ -40,6 +50,12 @@ public class CounterAppSerial {
 		differenceAsPercent = Math.abs(difference*100) / linearResult;
 		System.out.println();
 		System.out.println("difference: " + difference.toString() + " or " + differenceAsPercent + "%");	
+		
+		
+		barrier = new CyclicBarrier(CounterApp.howManyNumbers);
+		instance = new CounterApp();
+		
+		instance.countLinearAsync(); // calls countPermutedAsync when it finishes.
 	}
 
 	
@@ -81,6 +97,46 @@ public class CounterAppSerial {
 
 		return tempValues[0];
 	}
+	
+	
+	public void countLinearAsync() {
+		Thread[] threads = new Thread[howManyNumbers];
+		
+		for(int i = 0; i < howManyNumbers; i++) {
+			threads[i] = new LinearCountingThread(i, barrier);
+			threads[i].start();
+		}
+	}
+	
+	public static void doneWithLinearCount() {
+		System.out.println();
+		System.out.println("countLinear: " + linearResult.toString());
+		
+		instance.countPermutedAsync();
+	}
+
+	public void countPermutedAsync() {
+		Thread[] threads = new Thread[howManyNumbers];
+		
+		for(int i = 0; i < howManyNumbers; i++) {
+			threads[permutation[i]] = new PermutedCountingThread(i, barrier);
+		}
+		
+		for(int i = 0; i < howManyNumbers; i++) {
+			threads[i].start();
+		}
+	}
+	
+	public static void doneWithPermutedCount() {
+		finishedPermuted = true;
+		System.out.println("countPermuted: " + permutedResult.toString());
+		
+		Float difference = linearResult - permutedResult;
+		Float differenceAsPercent = Math.abs(difference*100) / linearResult;
+		System.out.println();
+		System.out.println("difference: " + difference.toString() + " or " + differenceAsPercent + "%");
+	}
+	
 	
 	
 	public static float[] getRandomFloats(int seed, int howManyNumbers) {

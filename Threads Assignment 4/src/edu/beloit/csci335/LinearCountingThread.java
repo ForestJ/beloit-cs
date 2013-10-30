@@ -14,7 +14,7 @@ public class LinearCountingThread extends Thread {
 	
 	public void run() {
 		
-		float randomValue = CounterAppParallel.values[index];
+		float randomValue = CounterApp.values[index];
 		
 		try {
 			barrier.await();
@@ -24,25 +24,25 @@ public class LinearCountingThread extends Thread {
 			e1.printStackTrace();
 		}
 		
-		synchronized(CounterAppParallel.lock) {
-			while(CounterAppParallel.nextIndex != index) {
+		synchronized(CounterApp.lock) {
+			while(CounterApp.nextIndex != index) {
 				try {
-					CounterAppParallel.lock.wait();
+					CounterApp.lock.wait();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
 		}
 		
-		CounterAppParallel.linearResult += randomValue;
+		CounterApp.linearResult += randomValue;
 		
-		CounterAppParallel.nextIndex++;
-		if(CounterAppParallel.nextIndex >= CounterAppParallel.howManyNumbers) {
-			CounterAppParallel.doneWithLinearCount();
+		CounterApp.nextIndex++;
+		if(CounterApp.nextIndex >= CounterApp.howManyNumbers) {
+			CounterApp.doneWithLinearCount();
 		}
 		
-		synchronized(CounterAppParallel.lock) {
-			CounterAppParallel.lock.notifyAll();
+		synchronized(CounterApp.lock) {
+			CounterApp.lock.notifyAll();
 		}
 	}
 }
